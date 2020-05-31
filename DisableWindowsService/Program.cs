@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using Synergy.Extensions;
 using Synergy.Logging;
 using Synergy.Logging.EventArgs;
@@ -39,7 +40,7 @@ namespace DisableWindowsService {
 				return -1;
 			}
 
-			if (Helpers.GetOSType() != Synergy.Extensions.Enums.EOSType.Windows10) {
+			if (!IsWindows10()) {
 				Logger.Error("The running platform is not Windows 10.");
 				Logger.Warning("Cannot continue... press any key to exit.");
 				Console.ReadKey(true);
@@ -54,19 +55,19 @@ namespace DisableWindowsService {
 					continue;
 				}
 
-				Logger.Info($"Processing for '{serviceName}' service...");
-				successCount = StopService(serviceName) && DisableService(serviceName) ? successCount++ : successCount;
-				Logger.Info($"Processing for '{serviceName}' service completed!");
+				if(StopService(serviceName) && DisableService(serviceName)) {
+					successCount++;
+				}
 			}
 
 			if (successCount == ServiceNames.Length) {
-				Logger.Info("Successfully disabled all services!");
+				Logger.WithColor("Successfully disabled all services!", ConsoleColor.Green);
 				Logger.Info("Existing in 10 seconds...");
 				await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
 				return 0;
 			}
 
-			Logger.Info($"'{successCount}' services succeeded out of '{ServiceNames.Length}' services.");
+			Logger.WithColor($"'{successCount}' services succeeded out of '{ServiceNames.Length}' services.", ConsoleColor.Green);
 			Logger.Info("Existing in 10 seconds...");
 			await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
 			return -1;
@@ -86,7 +87,13 @@ namespace DisableWindowsService {
 				using (ServiceController sc = new ServiceController(serviceName)) {
 					Logger.Info($"'{serviceName}' service is currently in '{sc.Status}' state.");
 
+					if(sc.Status == ServiceControllerStatus.Stopped) {
+						Logger.WithColor($"Skipping '{serviceName}' service as its already stopped!", ConsoleColor.Green);
+						return true;
+					}
+
 					Logger.Info($"Trying to stop '{serviceName}' service...");
+
 					if (!sc.CanStop) {
 						Logger.Warning($"'{serviceName}' service can't be stopped.");
 						return false;
@@ -96,7 +103,7 @@ namespace DisableWindowsService {
 					sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
 
 					if (sc.Status == ServiceControllerStatus.Stopped) {
-						Logger.Info($"'{serviceName}' service has been stopped.");
+						Logger.WithColor($"'{serviceName}' service has been stopped!", ConsoleColor.Green);
 						return true;
 					}
 
@@ -126,7 +133,7 @@ namespace DisableWindowsService {
 					mo.InvokeMethod("ChangeStartMode", new object[] { "Disabled" });
 				}
 
-				Logger.Info($"'{serviceName}' service disabled successfully!");
+				Logger.WithColor($"'{serviceName}' service disabled successfully!", ConsoleColor.Green);
 				return true;
 			}
 			catch (Exception e) {
@@ -134,6 +141,21 @@ namespace DisableWindowsService {
 				Logger.Error($"Failed to disable '{serviceName}' service.");
 				return false;
 			}
+		}
+
+		/// <summary>
+		/// Check if the current running OS is windows 10
+		/// </summary>
+		/// <returns>Boolean indicating if OS is windows 10 or not</returns>
+		private static bool IsWindows10() {
+			try {
+				using (RegistryKey reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")) {
+					return ((string) reg.GetValue("ProductName")).StartsWith("Windows 10");
+				}
+			}catch(Exception e) {
+				Logger.Exception(e);
+				return false;
+			}			
 		}
 
 		/// <summary>
