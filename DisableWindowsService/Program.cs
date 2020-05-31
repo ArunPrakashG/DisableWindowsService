@@ -3,6 +3,10 @@ using Synergy.Logging;
 using Synergy.Logging.EventArgs;
 using Synergy.Logging.Interfaces;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Management;
 using System.Reflection;
 using System.Security.Principal;
@@ -13,6 +17,8 @@ using Enums = Synergy.Logging.Enums;
 namespace DisableWindowsService {
 	internal class Program {
 		private static readonly ILogger Logger = new Logger(nameof(Program));
+
+		private const int MAX_PARALLEL_TASKS = 10;
 
 		/// <summary>
 		/// SuperFetch service name.
@@ -71,6 +77,11 @@ namespace DisableWindowsService {
 			}
 
 			int successCount = 0;
+			int completedCount = 0;
+			Action[] actionsList = new Action[ServiceNames.Length];
+
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
 			for (int i = 0; i < ServiceNames.Length; i++) {
 				string serviceName = ServiceNames[i];
 
@@ -78,10 +89,30 @@ namespace DisableWindowsService {
 					continue;
 				}
 
-				if (StopService(serviceName) && DisableService(serviceName)) {
-					successCount++;
-				}
+				actionsList[i] = () => {
+					try {
+						bool isSuccess = StopService(serviceName) && DisableService(serviceName);
+
+						if (isSuccess) {
+							successCount++;
+						}
+					}
+					finally {
+						completedCount++;
+					}
+				};
 			}
+
+			Parallel.Invoke(new ParallelOptions() {
+				MaxDegreeOfParallelism = MAX_PARALLEL_TASKS
+			}, actionsList);
+
+			while(completedCount != actionsList.Length) {
+				await Task.Delay(1).ConfigureAwait(false);
+			}
+
+			stopwatch.Stop();
+			Logger.WithColor($"It took {Math.Round(stopwatch.Elapsed.TotalSeconds, 3)} seconds to stop '{ServiceNames.Length}' services.", ConsoleColor.Green);
 
 			if (successCount == ServiceNames.Length) {
 				Logger.WithColor("Successfully disabled all services!", ConsoleColor.Green);
@@ -245,6 +276,24 @@ namespace DisableWindowsService {
 			}
 
 			Console.ResetColor();
+		}
+
+		private static int GetLengthTrimmed<T>(IEnumerable<T> collection) {
+			if(collection == null || collection.Count() <= 0) {
+				return 0;
+			}
+
+			int count = 0;
+
+			foreach(T v in collection) {
+				if(v == null) {
+					continue;
+				}
+
+				count++;
+			}
+
+			return count;
 		}
 	}
 }
