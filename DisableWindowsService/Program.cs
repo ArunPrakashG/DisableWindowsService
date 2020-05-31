@@ -13,15 +13,13 @@ using Enums = Synergy.Logging.Enums;
 namespace DisableWindowsService {
 	internal class Program {
 		private static readonly ILogger Logger = new Logger(nameof(Program));
-
+		private const string SUPERFETCH_SERVICE = "SysMain";
+		private const string UPDATE_SERVICE = "wuauserv";
 		/// <summary>
 		/// The services to disable.
 		/// <br/> Add services here if you need to automatically disable them.
 		/// </summary>
-		private static readonly string[] ServiceNames = new string[2] {
-			"SysMain",
-			"wuauserv"
-		};
+		private static string[] ServiceNames;
 
 		/// <summary>
 		/// Boolean value indicating if the current user is the administrator of this system and the current instance is started as in Administrator mode.
@@ -29,6 +27,23 @@ namespace DisableWindowsService {
 		private static bool IsAdministrator => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
 
 		private static async Task<int> Main(string[] args) {
+			if(args != null && args.Length > 0) {
+				ServiceNames = new string[args.Length + 2];
+
+				for(int i = 0; i < ServiceNames.Length; i++) {
+					if(args[i] == null) {
+						continue;
+					}
+
+					ServiceNames[i] = args[i];
+				}				
+			}
+			else {
+				ServiceNames = new string[2];
+			}
+
+			ServiceNames[^2] = "SysMain";
+			ServiceNames[^1] = "wuauserv";
 			Console.Title = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version}";
 			global::Synergy.Logging.Logger.LogMessageReceived += Logger_LogMessageReceived;
 
