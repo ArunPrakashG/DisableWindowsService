@@ -3,10 +3,7 @@ using Synergy.Logging;
 using Synergy.Logging.EventArgs;
 using Synergy.Logging.Interfaces;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Management;
 using System.Reflection;
 using System.Security.Principal;
@@ -44,21 +41,21 @@ namespace DisableWindowsService {
 		private static bool IsAdministrator => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
 
 		private static async Task<int> Main(string[] args) {
-			if(args != null && args.Length > 0) {
+			if (args != null && args.Length > 0) {
 				ServiceNames = new string[args.Length + 2];
 
-				for(int i = 0; i < ServiceNames.Length; i++) {
-					if(args[i] == null) {
+				for (int i = 0; i < ServiceNames.Length; i++) {
+					if (args[i] == null) {
 						continue;
 					}
 
 					ServiceNames[i] = args[i];
-				}				
+				}
 			}
 			else {
 				ServiceNames = new string[2];
 			}
-			
+
 			ServiceNames[^2] = SUPERFETCH_SERVICE;
 			ServiceNames[^1] = UPDATE_SERVICE;
 
@@ -110,7 +107,7 @@ namespace DisableWindowsService {
 				MaxDegreeOfParallelism = MAX_PARALLEL_TASKS
 			}, actionsList);
 
-			while(completedCount != actionsList.Length) {
+			while (completedCount != actionsList.Length) {
 				await Task.Delay(1).ConfigureAwait(false);
 			}
 
