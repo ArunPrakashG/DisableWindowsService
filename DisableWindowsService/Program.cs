@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using Synergy.Extensions;
 using Synergy.Logging;
 using Synergy.Logging.EventArgs;
 using Synergy.Logging.Interfaces;
@@ -55,7 +54,7 @@ namespace DisableWindowsService {
 					continue;
 				}
 
-				if(StopService(serviceName) && DisableService(serviceName)) {
+				if (StopService(serviceName) && DisableService(serviceName)) {
 					successCount++;
 				}
 			}
@@ -87,7 +86,7 @@ namespace DisableWindowsService {
 				using (ServiceController sc = new ServiceController(serviceName)) {
 					Logger.Info($"'{serviceName}' service is currently in '{sc.Status}' state.");
 
-					if(sc.Status == ServiceControllerStatus.Stopped) {
+					if (sc.Status == ServiceControllerStatus.Stopped) {
 						Logger.WithColor($"Skipping '{serviceName}' service as its already stopped!", ConsoleColor.Green);
 						return true;
 					}
@@ -152,10 +151,11 @@ namespace DisableWindowsService {
 				using (RegistryKey reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")) {
 					return ((string) reg.GetValue("ProductName")).StartsWith("Windows 10");
 				}
-			}catch(Exception e) {
+			}
+			catch (Exception e) {
 				Logger.Exception(e);
 				return false;
-			}			
+			}
 		}
 
 		/// <summary>
