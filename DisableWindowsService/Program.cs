@@ -18,6 +18,9 @@ namespace DisableWindowsService {
 	internal class Program {
 		private static readonly ILogger Logger = new Logger(nameof(Program));
 
+		/// <summary>
+		/// Maximum number of parallel tasks we should run at a time.
+		/// </summary>
 		private const int MAX_PARALLEL_TASKS = 10;
 
 		/// <summary>
@@ -276,24 +279,6 @@ namespace DisableWindowsService {
 			}
 
 			Console.ResetColor();
-		}
-
-		private static int GetLengthTrimmed<T>(IEnumerable<T> collection) {
-			if(collection == null || collection.Count() <= 0) {
-				return 0;
-			}
-
-			int count = 0;
-
-			foreach(T v in collection) {
-				if(v == null) {
-					continue;
-				}
-
-				count++;
-			}
-
-			return count;
 		}
 	}
 }
