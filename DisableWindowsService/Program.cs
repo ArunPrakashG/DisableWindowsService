@@ -13,11 +13,19 @@ using Enums = Synergy.Logging.Enums;
 namespace DisableWindowsService {
 	internal class Program {
 		private static readonly ILogger Logger = new Logger(nameof(Program));
+
+		/// <summary>
+		/// SuperFetch service name.
+		/// </summary>
 		private const string SUPERFETCH_SERVICE = "SysMain";
+
+		/// <summary>
+		/// Update service name.
+		/// </summary>
 		private const string UPDATE_SERVICE = "wuauserv";
+
 		/// <summary>
 		/// The services to disable.
-		/// <br/> Add services here if you need to automatically disable them.
 		/// </summary>
 		private static string[] ServiceNames;
 
@@ -41,9 +49,10 @@ namespace DisableWindowsService {
 			else {
 				ServiceNames = new string[2];
 			}
+			
+			ServiceNames[^2] = SUPERFETCH_SERVICE;
+			ServiceNames[^1] = UPDATE_SERVICE;
 
-			ServiceNames[^2] = "SysMain";
-			ServiceNames[^1] = "wuauserv";
 			Console.Title = $"{Assembly.GetExecutingAssembly().GetName().Name} v{Assembly.GetExecutingAssembly().GetName().Version}";
 			global::Synergy.Logging.Logger.LogMessageReceived += Logger_LogMessageReceived;
 
